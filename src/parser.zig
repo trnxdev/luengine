@@ -705,6 +705,16 @@ pub fn parsePrimary(self: *@This()) anyerror!*AST.Expression {
             exp.* = (try self.parseTableConstructorExpr()).*;
         },
         .function => exp.* = (try self.parseFunctionDefExpression()).*,
+        .LeftBracket => {
+            _ = try self.advanceIfCurrentKindEql(.LeftBracket);
+            const expressions = try self.parseExplist();
+            _ = try self.advanceIfCurrentKindEql(.RightBracket);
+            exp.* = .{
+                .Literal = .{
+                    .List = expressions,
+                },
+            };
+        },
         else => exp.* = (try self.parsePrefixExpression()).*,
     }
 

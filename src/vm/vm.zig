@@ -196,6 +196,18 @@ pub fn execute(allocator: std.mem.Allocator, root_func: *Object.Function) !void 
                     unreachable;
                 }
             },
+            .BuildList => {
+                var list = try allocator.alloc(Value, instr.A);
+
+                for (0..instr.A) |idx| {
+                    list[idx] = vm.pop();
+                }
+
+                std.mem.reverse(Value, list); // TODO: just a backwards insert?
+
+                const obj_list = try Object.List.create(allocator, list);
+                try vm.push(obj_list.obj.asValue());
+            },
             .Exit => break :o,
         }
 

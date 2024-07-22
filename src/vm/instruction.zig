@@ -26,6 +26,7 @@ pub const Instruction = struct {
         Jump_True,
         Jump_False,
 
+        BuildList, // A: Amount of items (pops)
         Return, // A: 1 if val 0 if nil
     };
 };

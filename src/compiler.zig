@@ -228,14 +228,28 @@ pub fn compileExpr(self: *@This(), expr: AST.Expression) anyerror!void {
             });
         },
         .Literal => |l| {
-            const constant = try self.literalToValue(l);
+            switch (l) {
+                .List => |list| {
+                    for (list) |lexpr| {
+                        try self.compileExpr(lexpr.*);
+                    }
 
-            try self.chunk.append(Instruction{
-                .kind = .LoadConst,
-                .A = self.constants.items.len,
-            });
+                    try self.chunk.append(.{
+                        .kind = .BuildList,
+                        .A = list.len,
+                    });
+                },
+                else => {
+                    const constant = try self.literalToValue(l);
 
-            try self.constants.append(constant);
+                    try self.chunk.append(Instruction{
+                        .kind = .LoadConst,
+                        .A = self.constants.items.len,
+                    });
+
+                    try self.constants.append(constant);
+                },
+            }
         },
         .Prefix => |p| {
             switch (p) {
@@ -293,7 +307,7 @@ pub fn literalToValue(self: *@This(), l: AST.Expression.Literal) anyerror!Value 
         .Numeral => |n| Value.initNumber(n),
         .String => |s| (try Object.String.create(self.allocator, s)).obj.asValue(),
         .Nil => Value.initNil(),
-        .Table => @panic("TODO"),
+        else => @panic("TODO"),
     };
 
     return val.*;
@@ -313,7 +327,12 @@ pub fn compileFunccall(self: *@This(), func_call: AST.FunctionCall) anyerror!voi
 }
 
 pub fn defineNatives(self: *@This()) !void {
-    const print_ln = try Object.NativeFunction.create(self.allocator, 1, println);
+    const print_ln = try Object.NativeFunction.create(
+        self.allocator,
+        "println",
+        1,
+        println,
+    );
 
     try self.natives.put("println", self.constants.items.len);
     try self.constants.append(print_ln.obj.asValue());
@@ -322,8 +341,13 @@ pub fn defineNatives(self: *@This()) !void {
 pub fn println(vm: *VM.VM, args: []Value) Value {
     _ = vm;
 
-    const to_print = args[0];
+    _ = print(args[0]);
+    std.debug.print("\n", .{});
 
+    return Value.initNil();
+}
+
+pub fn print(to_print: Value) void {
     if (to_print.isBool())
         std.debug.print("{s}", .{if (to_print.asBool()) "true" else "false"})
     else if (to_print.isNil())
@@ -332,10 +356,29 @@ pub fn println(vm: *VM.VM, args: []Value) Value {
         std.debug.print("{d}", .{to_print.asNumber()})
     else if (to_print.isObjectOfType(.String))
         std.debug.print("{s}", .{to_print.asObjectOfType(.String).value})
-    else
-        std.debug.print("UNKNOWN", .{});
+    else if (to_print.isObjectOfType(.List)) {
+        const list = to_print.asObjectOfType(.List);
 
-    std.debug.print("\n", .{});
+        std.debug.print("[", .{});
 
-    return Value.initNil();
+        for (list.items, 0..) |item, idx| {
+            print(item);
+
+            if (idx != list.items.len -| 1) {
+                std.debug.print(", ", .{});
+            }
+        }
+
+        std.debug.print("]", .{});
+    } else if (to_print.isObjectOfType(.Function)) {
+        const func = to_print.asObjectOfType(.Function);
+
+        if (func.isRoot())
+            unreachable;
+
+        std.debug.print("<function {s}:{d}>", .{ func.name.?.value, @intFromPtr(func) });
+    } else if (to_print.isObjectOfType(.NativeFunction)) {
+        const func = to_print.asObjectOfType(.NativeFunction);
+        std.debug.print("<native_function {s}:{d}>", .{ func.name.value, func.ptr });
+    } else std.debug.print("UNKNOWN", .{});
 }

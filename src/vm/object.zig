@@ -26,6 +26,7 @@ pub fn destroy(self: *@This(), allocator: std.mem.Allocator) void {
         .String => self.as(*Object.String).free(allocator),
         .Function => self.as(*Object.Function).free(allocator),
         .NativeFunction => self.as(*Object.NativeFunction).free(allocator),
+        .List => self.as(*Object.List).free(allocator),
     };
 }
 
@@ -33,6 +34,7 @@ pub const Type = enum {
     String,
     Function,
     NativeFunction,
+    List,
 };
 
 pub const String = struct {
@@ -99,14 +101,16 @@ pub const NativeFunction = struct {
     obj: Object,
     arity: usize,
     ptr: usize,
+    name: *Object.String,
 
-    pub fn create(allocator: std.mem.Allocator, arity: usize, ptr: *const fn (*VM, []Value) Value) !*NativeFunction {
+    pub fn create(allocator: std.mem.Allocator, name: []const u8, arity: usize, ptr: *const fn (*VM, []Value) Value) !*NativeFunction {
         const obj = try Object.allocate(allocator, NativeFunction, .NativeFunction);
         const out = obj.as(*Object.NativeFunction);
 
         out.* = NativeFunction{
             .obj = obj.*,
             .arity = arity,
+            .name = try Object.String.create(allocator, name),
             .ptr = @intFromPtr(ptr),
         };
 
@@ -114,6 +118,29 @@ pub const NativeFunction = struct {
     }
 
     pub fn free(self: *@This(), allocator: std.mem.Allocator) void {
+        self.name.free(allocator);
+        allocator.destroy(self);
+    }
+};
+
+pub const List = struct {
+    obj: Object,
+    items: []Value,
+
+    pub fn create(allocator: std.mem.Allocator, items: []Value) !*List {
+        const obj = try Object.allocate(allocator, List, .List);
+        const out = obj.as(*Object.List);
+
+        out.* = List{
+            .obj = obj.*,
+            .items = items,
+        };
+
+        return out;
+    }
+
+    pub fn free(self: *@This(), allocator: std.mem.Allocator) void {
+        allocator.free(self.items);
         allocator.destroy(self);
     }
 };
@@ -131,5 +158,6 @@ pub fn ObjectTypeToType(comptime object_type: Object.Type) type {
         .String => *Object.String,
         .Function => *Object.Function,
         .NativeFunction => *Object.NativeFunction,
+        .List => *Object.List,
     });
 }

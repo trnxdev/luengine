@@ -8,5 +8,6 @@ function fib(n)
     return fib(n - 1) + fib(n - 2)
 end
 
-println("Fibonacci of 35 is:")
-println(fib(35))
+println("Fibonacci of 20 is:")
+println(fib(20))
+println([1, 2, 3, nil, true, false, fib, println])

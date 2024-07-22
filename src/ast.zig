@@ -126,6 +126,7 @@ pub const Expression = union(enum) {
     pub const Literal = union(enum) {
         Nil,
         Table: TableConstructor,
+        List: []*Expression,
         Bool: bool,
         Numeral: f64,
         String: []const u8,
