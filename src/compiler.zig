@@ -214,7 +214,11 @@ pub fn compileExpr(self: *@This(), expr: AST.Expression) anyerror!void {
                     .Sub => .Sub,
                     .Mul => .Mul,
                     .FloatDiv => .Div,
+
+                    .Lt => .Lt,
+                    .Gt => .Gt,
                     .Lte => .Lte,
+                    .Gte => .Gte,
 
                     .Concat => .Concat,
 

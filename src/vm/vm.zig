@@ -117,6 +117,21 @@ pub fn execute(allocator: std.mem.Allocator, root_func: *Object.Function) !void 
                 const a = vm.pop();
                 try vm.push(Value.initBool(a.asNumber() <= b.asNumber()));
             },
+            .Gte => {
+                const b = vm.pop();
+                const a = vm.pop();
+                try vm.push(Value.initBool(a.asNumber() >= b.asNumber()));
+            },
+            .Lt => {
+                const b = vm.pop();
+                const a = vm.pop();
+                try vm.push(Value.initBool(a.asNumber() < b.asNumber()));
+            },
+            .Gt => {
+                const b = vm.pop();
+                const a = vm.pop();
+                try vm.push(Value.initBool(a.asNumber() > b.asNumber()));
+            },
             .SetLocal => vm.currentFrame().locals[instr.A] = vm.pop(),
             .GetLocal => try vm.push(vm.currentFrame().locals[instr.A]),
             .Return => {

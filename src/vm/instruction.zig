@@ -9,7 +9,10 @@ pub const Instruction = struct {
         Sub,
         Mul,
         Div,
+        Lt,
+        Gt,
         Lte,
+        Gte,
         Concat,
         LoadConst, // A: Index of the Constant (function.constants)
         Pop,
